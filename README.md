@@ -13,4 +13,18 @@ Este projeto coleta dados de um acelerômetro instalado na suspensão do carro d
 
 ESP8266 → WebSocket → Node.js → Dashboard (e gravação em CSV)
 
+## Como rodar:
+```bash
+cd Telemetry-Formula
+npm init -y
+npm install ws express
+node server.js
+```
+Depois, abra http://localhost:8080 no navegador.
 
+**OBS.:** Para emular dados fictícios para fins de teste, rode o código `send_fake_data.py` com:
+```bash
+python3 send_fake_data.py
+```
+
+Os valores fictícios devem aparecer em tempo real no dashboard web.
