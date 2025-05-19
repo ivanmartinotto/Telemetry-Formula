@@ -1,0 +1,32 @@
+# Arduino / PlatformIO
+*.elf
+*.bin
+*.hex
+*.map
+*.d
+*.o
+.pio/
+.vscode/
+.DS_Store
+.idea/
+*.pyc
+__pycache__/
+build/
+dist/
+
+# Node.js
+node_modules/
+.env
+npm-debug.log
+package-lock.json
+package.json
+
+# CSVs de sessão
+*.csv
+!public/example.csv  # se quiser manter um exemplo
+
+# Arquivos temporários
+*.tmp
+*.log
+*.bak
+*.swp
