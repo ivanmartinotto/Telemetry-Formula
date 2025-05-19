@@ -6,14 +6,14 @@ Este projeto coleta dados de um acelerômetro instalado na suspensão do carro d
 
 - **ESP8266** + **MPU6050**
 - **Servidor Node.js** com salvamento de dados em `.csv` (arquivo `telemetry_data.csv` é criado na pasta "Data Analysis")
-- **Dashboard HTML/JS** com gráficos ao vivo (Chart.js)
+- **Dashboard HTML/JS** com gráficos ao vivo (Chart.js) e seleção de canais (ax, ay e az)
 - **Análise offline** futura com Python (`pandas`, `matplotlib`)
 
 ## 📡 Fluxo de Dados
 
 ESP8266 → WebSocket → Node.js → Dashboard (e gravação em CSV)
 
-## Como rodar:
+## Como rodar (NODE.js e Python já instalados):
 ```bash
 cd Telemetry-Formula
 npm init -y
