@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>GuguVanvan Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background-color: #0d1b2a;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .top-section {
+      display: flex;
+      padding: 10px;
+      border-bottom: 2px solid #1b263b;
+    }
+    .lap-time, .checkboxes, .bar-indicators, .tire-temp {
+      margin: 5px;
+      padding: 10px;
+      background-color: #1b263b;
+      border-radius: 8px;
+    }
+    .lap-time{
+      width: 200px;
+    }
+    .bar-indicators {
+      flex: 4;
+      display: flex;
+      justify-content: space-around;
+      gap: 10px;
+      align-items: center;
+    }
+    .bar {
+      display: flex;
+      flex-direction: column;
+      width: 100px;
+    }
+    .tire-temp {
+      flex: 2;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 5px;
+      align-items: center;
+      justify-items: center;
+    }
+    .tire {
+      background-color: #324a5f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10%;
+      height: 150px;
+      font-weight: bold;
+      width: 100px;
+    }
+    .main-section {
+      display: flex;
+      flex-direction: row;
+      height: calc(100vh - 300px);
+      padding: 10px;
+    }
+    .checkboxes {
+      margin-top: 10px;
+      margin-right: 10px;
+      height: 605px;
+      width: 200px;
+    }
+    .charts {
+      display: flex;
+      flex-direction: column;
+      margin-top: 11px;
+      gap: 10px;
+      flex: 4;
+    }
+    canvas {
+      background-color: #ffffff;
+      border-radius: 6px;
+      width: 100%;
+      height: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-section">
+    <div class="lap-time">
+      <h3>Lap Time</h3>
+      <div id="lapTimeList"></div>
+    </div>
+    <div class="bar-indicators">
+      <div class="bar"><h4>RPM</h4><canvas id="rpmBar" width="50" height="150"></canvas></div>
+      <div class="bar"><h4>Engine Temp</h4><canvas id="tempBar" width="50" height="150" margin-top="5"></canvas></div>
+      <div class="bar"><h4>Oil Pressure</h4><canvas id="oilBar" width="50" height="150"></canvas></div>
+      <div class="bar"><h4>Fuel Press.</h4><canvas id="fuelBar" width="50" height="150"></canvas></div>
+      <div class="bar"><h4>Lambda</h4><canvas id="lambdaBar" width="50" height="150"></canvas></div>
+      <div class="bar"><h4>Battery</h4><canvas id="batteryBar" width="50" height="150"></canvas></div>
+    </div>
+    <div class="tire-temp">
+      <div class="tire" id="tireFL">FL<br><small>temp</small></div>
+      <div class="tire" id="tireFR">FR<br><small>temp</small></div>
+      <div class="tire" id="tireRL">RL<br><small>temp</small></div>
+      <div class="tire" id="tireRR">RR<br><small>temp</small></div>
+    </div>
+  </div>
+  <div class="main-section">
+    <div class="checkboxes">
+      <h4>Sensores disponíveis</h4>
+      <div id="sensorList"></div>
+    </div>
+    <div class="charts">
+      <canvas id="chart1"></canvas>
+      <canvas id="chart2"></canvas>
+      <canvas id="chart3"></canvas>
+    </div>
+  </div>
+
+  <script>
+  const ws = new WebSocket("ws://localhost:8080");
+
+  const maxPoints = 30;
+  const sensorData = {};
+  const charts = [null, null, null];
+  const chartDatasets = [[], [], []];
+  const chartLabels = [[], [], []];
+
+  // Criação dinâmica das checkboxes com base no primeiro JSON recebido
+  let initialized = false;
+
+  const createBarRPM = (ctx, color) => new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{ data: [0], backgroundColor: color }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 10000 },
+        x: { display: false }
+      }
+    }
+  });
+
+  const createBarTemp = (ctx, color) => new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{ data: [0], backgroundColor: color }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 160 },
+        x: { display: false }
+      }
+    }
+  });
+
+  const createBarOil = (ctx, color) => new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{ data: [0], backgroundColor: color }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100 },
+        x: { display: false }
+      }
+    }
+  });
+
+  const createBarFuel = (ctx, color) => new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{ data: [0], backgroundColor: color }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 20 },
+        x: { display: false }
+      }
+    }
+  });
+
+  const createBarLambda = (ctx, color) => new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{ data: [0], backgroundColor: color }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 2 },
+        x: { display: false }
+      }
+    }
+  });
+
+  const createBarBatt = (ctx, color) => new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{ data: [0], backgroundColor: color }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 16 },
+        x: { display: false }
+      }
+    }
+  });
+
+  const bars = {
+    rpm: createBarRPM(document.getElementById("rpmBar"), "blue"),
+    temp: createBarTemp(document.getElementById("tempBar"), "red"),
+    oilPress: createBarOil(document.getElementById("oilBar"), "orange"),
+    fuelPress: createBarFuel(document.getElementById("fuelBar"), "purple"),
+    lambda: createBarLambda(document.getElementById("lambdaBar"), "green"),
+    batt: createBarBatt(document.getElementById("batteryBar"), "yellow")
+  };
+
+  function updateTire(id, value) {
+    const el = document.getElementById(id);
+    el.innerHTML = `${id}<br><small>${value.toFixed(1)}°C</small>`;
+    el.style.backgroundColor = value > 80 ? "#ff6666" : value > 60 ? "#ffcc00" : "#324a5f";
+  }
+
+  function createLineChart(ctx, label) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label,
+          data: [],
+          borderColor: 'white',
+          backgroundColor: 'rgba(255,255,255,0.1)',
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: 'white',
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: {
+          x: { display: true },
+          y: { beginAtZero: false }
+        }
+      }
+    });
+  }
+
+
+  function updateChart(index, label, time, value) {
+    const chart = charts[index];
+    if (!chart) return;
+
+    chart.data.labels.push(time);
+    chart.data.datasets[0].data.push(value);
+
+    if (chart.data.labels.length > maxPoints) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+    }
+
+    chart.update();
+  }
+
+  function setupCheckboxes(data) {
+    const keys = Object.keys(data).filter(k => k !== "timestamp");
+    const container = document.getElementById("sensorList");
+
+    keys.forEach((key, i) => {
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = key;
+      cb.name = key;
+      cb.value = key;
+      cb.addEventListener("change", handleCheckbox);
+
+      const label = document.createElement("label");
+      label.htmlFor = key;
+      label.innerText = key;
+
+      const div = document.createElement("div");
+      div.appendChild(cb);
+      div.appendChild(label);
+
+      container.appendChild(div);
+    });
+  }
+
+  function handleCheckbox() {
+    const selected = Array.from(document.querySelectorAll(".checkboxes input:checked"))
+      .map(cb => cb.value)
+      .slice(0, 3); // limita a 3
+
+    selected.forEach((key, i) => {
+      if (!charts[i]) {
+        charts[i] = createLineChart(document.getElementById(`chart${i+1}`), key);
+      } else {
+        charts[i].data.labels = [];
+        charts[i].data.datasets[0].data = [];
+        charts[i].data.datasets[0].label = key;
+      }
+    });
+
+    for (let i = selected.length; i < 3; i++) {
+      if (charts[i]) {
+        charts[i].destroy();
+        charts[i] = null;
+      }
+    }
+  }
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    const time = new Date(data.timestamp).toLocaleTimeString();
+
+    // Inicialização das checkboxes apenas na primeira mensagem
+    if (!initialized) {
+      setupCheckboxes(data);
+      initialized = true;
+    }
+
+    // Atualiza barras
+    if (bars.rpm) bars.rpm.data.datasets[0].data[0] = data.rpm || 0;
+    if (bars.temp) bars.temp.data.datasets[0].data[0] = data.engineTemp || 0;
+    if (bars.oilPress) bars.oilPress.data.datasets[0].data[0] = data.oilPress || 0;
+    if (bars.fuelPress) bars.fuelPress.data.datasets[0].data[0] = data.fuelPress || 0;
+    if (bars.lambda) bars.lambda.data.datasets[0].data[0] = data.lambda || 0;
+    if (bars.batt) bars.batt.data.datasets[0].data[0] = data.battery || 0;
+
+    Object.values(bars).forEach(b => b.update());
+
+    // Pneus
+    updateTire("tireFL", data.frontLeftTire || 0);
+    updateTire("tireFR", data.frontRightTire || 0);
+    updateTire("tireRL", data.rearLeftTire || 0);
+    updateTire("tireRR", data.rearRightTire || 0);
+
+    // Gráficos
+    const selected = Array.from(document.querySelectorAll(".checkboxes input:checked"))
+      .map(cb => cb.value)
+      .slice(0, 3);
+
+    selected.forEach((key, i) => {
+      updateChart(i, key, time, data[key]);
+    });
+  };
+  </script>
+
+</body>
+</html>
