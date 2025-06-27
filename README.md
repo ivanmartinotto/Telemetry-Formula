@@ -18,9 +18,22 @@ ESP8266 → WebSocket → Node.js → Dashboard (e gravação em CSV)
 cd Telemetry-Formula
 npm init -y
 npm install ws express
-node server.js
+npm install electron --save-dev
 ```
-Depois, abra http://localhost:8080 no navegador.
+
+Para rodar através do Electron, deve-se adicionar `"electron": "electron ."` no "scripts" do arquivo `package.json` ficando da seguinte forma:
+```bash
+"scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node main.js",
+    "electron": "electron ."
+}
+```
+
+Por fim, executa-se o seguinte comando:
+```bash
+npm run electron
+```
 
 **OBS.:** Para emular dados fictícios para fins de teste, rode o código `send_fake_data.py` com:
 ```bash
