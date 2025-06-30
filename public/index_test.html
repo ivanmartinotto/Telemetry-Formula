@@ -71,7 +71,7 @@
         .current-lap {
             background-color: rgba(255, 215, 0, 0.2);
         }
-        /* Tyres */
+        /* Tires */
         .grid-section {
             display: flex;
             flex-direction: column;
@@ -725,8 +725,8 @@
                 document.getElementById("lambdaBar").style.height = `${((data.lambda - 0.82) / 0.18 * 100)}%`;
             }
             if (data.battery) {
-                document.getElementById("batteryValue").textContent = `${data.battery.toFixed(0)}%`;
-                document.getElementById("batteryBar").style.height = `${data.battery}%`;
+                document.getElementById("batteryValue").textContent = `${data.battery.toFixed(0)}V`;
+                document.getElementById("batteryBar").style.height = `${(data.battery)*100/16}%`;
             }
 
             // Throttle chart updates
