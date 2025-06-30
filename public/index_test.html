@@ -1,378 +1,809 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>GuguVanvan Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      background-color: #0d1b2a;
-      color: #ffffff;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    .top-section {
-      display: flex;
-      padding: 10px;
-      border-bottom: 2px solid #1b263b;
-    }
-    .lap-time, .checkboxes, .bar-indicators, .tire-temp {
-      margin: 5px;
-      padding: 10px;
-      background-color: #1b263b;
-      border-radius: 8px;
-    }
-    .lap-time{
-      width: 200px;
-    }
-    .bar-indicators {
-      flex: 4;
-      display: flex;
-      justify-content: space-around;
-      gap: 10px;
-      align-items: center;
-    }
-    .bar {
-      display: flex;
-      flex-direction: column;
-      width: 100px;
-    }
-    .tire-temp {
-      flex: 2;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: 5px;
-      align-items: center;
-      justify-items: center;
-    }
-    .tire {
-      background-color: #324a5f;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10%;
-      height: 150px;
-      font-weight: bold;
-      width: 100px;
-    }
-    .main-section {
-      display: flex;
-      flex-direction: row;
-      height: calc(100vh - 300px);
-      padding: 10px;
-    }
-    .checkboxes {
-      margin-top: 10px;
-      margin-right: 10px;
-      height: 605px;
-      width: 200px;
-    }
-    .charts {
-      display: flex;
-      flex-direction: column;
-      margin-top: 11px;
-      gap: 10px;
-      flex: 4;
-    }
-    canvas {
-      background-color: #ffffff;
-      border-radius: 6px;
-      width: 100%;
-      height: 200px;
-    }
-  </style>
+    <title>Dashboard Telemetria</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 5px;
+            box-sizing: border-box;
+            background-color: #0d1b2a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        /* Laps */
+        .lap-register {
+            width: 24vw;
+            height: 32vh; 
+            margin: 1.1vx;
+            background: #1b263b;
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            position: sticky; 
+            left: 0;
+            color: white;
+        }
+        .lap-register h2 {
+            text-align: center;
+            margin-bottom: 3.3%;
+            margin-top: 1%;
+            font-size: 100%;
+            position: sticky;
+            top: 0;
+            background: #1b263b;
+            padding: 1px 0;
+            color: white;
+        }
+        .lap-entries {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .lap-entry {
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr;
+            gap: 5px;
+            padding: 3px 0;
+            font-size: 90%;
+            border-bottom: 1px solid #197BBD;
+            color: white;
+        }
+        .lap-entry-header {
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background: #1b263b;
+            border-bottom: 2px solid #197BBD;
+        }
+        .delta-positive {
+            color: #FF6666;
+        }
+        .delta-negative {
+            color: #70AE6E;
+        }
+        .current-lap {
+            background-color: rgba(255, 215, 0, 0.2);
+        }
+        /* Tyres */
+        .grid-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #grid-container {
+            width: 24vw;
+            height: 30vh;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 3px;
+            right: 0;
+        }
+        .box-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+        
+        .temperature-tire {
+            background: #197BBD;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1vw;
+            font-weight: bold;
+            transition: all 0.5s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            color: white;
+        }
+        .temperature-brakeL{
+            background: #197BBD;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1vw;
+            font-weight: bold;
+            transition: all 0.5s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            justify-self: start;
+            align-self: center;
+            height: 80%;
+            width: 4vw;
+            color: white;
+        }
+        .temperature-brakeR{
+            background: #197BBD;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1vw;
+            font-weight: bold;
+            transition: all 0.5s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            width: 4vw;
+            justify-self: end;
+            align-self: center;
+            height: 80%;
+            color: white;
+        }
+        /* Gauges */
+        #grid_container2{
+            width: 52vw;
+            height: 30vh;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: 1fr;
+            row-gap: 10px;
+            justify-self: center;
+            align-self: top;
+            margin-left: 0.5vw;
+            margin-right: 0.5vw;
+        }
+        .titulos_gauge{
+            text-align: center;
+            margin-top: 3px;
+            margin-bottom: 10px;
+            font-size: 100%;
+            font-weight: bold;
+            color: white;
+        }
+        .twothreshold{
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, 
+                #FF6666 0%, 
+                #FF6666 20%, 
+                #70AE6E 20%, 
+                #70AE6E 70%, 
+                #FF6666 70%, 
+                #FF6666 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gauge-container {
+            width: 7vw;
+            height: 26vh;
+            position: relative;
+            margin-left: 0.5vw;
+            margin-right: 0.5vw;
+        }
+        .gauge-background_temp{
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(to top, 
+                #197BBD 0%, 
+                #197BBD 20%, 
+                #70AE6E 20%, 
+                #70AE6E 70%, 
+                #FF6666 70%, 
+                #FF6666 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .onethreshold{
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(to top, 
+                #FF6666 0%, 
+                #FF6666 10%,
+                #F4AC45 10%,
+                #F4AC45 25%, 
+                #70AE6E 25%, 
+                #70AE6E 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .rpm{
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, /* Inverted */
+                #FF6666 0%, 
+                #FF6666 20%, 
+                #70AE6E 20%, 
+                #70AE6E 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .gauge-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.466);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            transition: height 0.8s ease;
+        }
+        
+        .gauge-marker {
+            position: absolute; 
+            left: 110%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: white;
+        }
+        
+        .gauge-value {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 100%;
+            font-weight: bold;
+            color: white;
+        }
+        /* Special inverted marker positioning */
+        .inverted-marker {
+            top: auto !important;
+            bottom: calc(100% - var(--marker-position)) !important;
+        }
+        /* Checkboxes */
+        .checkbox{
+            left: 0;
+            bottom: 0;
+            position: fixed;
+            display: flex;
+            width: 15vw;
+            height: 64vh;
+            background: #1b263b;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .checks_container{
+            width: 17vw;
+            height: 64vh;
+        }
+        .rows{
+            display: flex;
+            font: 100%;
+        }
+        /*Graphs*/
+        .graph-grid {
+            bottom: 0;
+            position: fixed;
+            right: 0;
+            width: 80vw;
+            height: 64vh;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .chart-container {
+            background-color: #1b263b;
+            border-radius: 6px;
+            width: 100%;
+            height: 32%;
+            min-height: 150px;
+            position: relative;
+        }
+        
+        .chart-title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            z-index: 10;
+            background-color: rgba(27, 38, 59, 0.7);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        canvas {
+            background-color: #1b263b;
+            border-radius: 6px;
+            width: 100%;
+            height: 200px;
+        }
+        fieldset {
+            border: 1px solid #197BBD;
+            border-radius: 5px;
+            padding: 10px;
+            color: white;
+        }
+        legend {
+            color: white;
+            padding: 0 5px;
+        }
+        label {
+            color: white;
+            margin-left: 5px;
+        }
+    </style>
 </head>
 <body>
-  <div class="top-section">
-    <div class="lap-time">
-      <h3>Lap Time</h3>
-      <div id="lapTimeList"></div>
+    <!-- Lap Register -->
+    <div class="lap-register">
+        <h2>Lap Times</h2>
+        <div class="lap-entries">
+            <div class="lap-entry lap-entry-header">
+                <div>Lap</div>
+                <div>Time</div>
+                <div>Delta</div>
+            </div>
+            <div id="lapEntries"></div>
+        </div>
     </div>
-    <div class="bar-indicators">
-      <div class="bar"><h4>RPM</h4><canvas id="rpmBar" width="50" height="150"></canvas></div>
-      <div class="bar"><h4>Engine Temp</h4><canvas id="tempBar" width="50" height="150" margin-top="5"></canvas></div>
-      <div class="bar"><h4>Oil Pressure</h4><canvas id="oilBar" width="50" height="150"></canvas></div>
-      <div class="bar"><h4>Fuel Press.</h4><canvas id="fuelBar" width="50" height="150"></canvas></div>
-      <div class="bar"><h4>Lambda</h4><canvas id="lambdaBar" width="50" height="150"></canvas></div>
-      <div class="bar"><h4>Battery</h4><canvas id="batteryBar" width="50" height="150"></canvas></div>
+
+    <div class="grid_container2" id="grid_container2">
+        <div class="gauge-container">
+            <div><h4 class="titulos_gauge">RPM</h4></div>
+            <div class="rpm">
+                <div class="gauge-bar" id="rpmBar"></div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 0%">13000</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 20%">11500</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 100%">0</div>
+            </div>
+            <div class="gauge-value" id="rpmValue">1000</div>
+        </div>
+        <div class="gauge-container">
+            <div><h4 class="titulos_gauge">Água (°C)</h4></div>
+            <div class="gauge-background_temp">
+                <div class="gauge-bar" id="tempBar"></div>
+                <div class="gauge-marker" style="top: 0%">110°C</div>
+                <div class="gauge-marker" style="top: 20%">100°C</div>
+                <div class="gauge-marker" style="top: 70%">70°C</div>
+                <div class="gauge-marker" style="top: 100%">0°C</div>
+            </div>
+            <div class="gauge-value" id="tempAgua">20°C</div>
+        </div>
+        <div class="gauge-container">
+            <div><h4 class="titulos_gauge">Pres. óleo</h4></div>
+            <div class="twothreshold">
+                <div class="gauge-bar" id="oilpresBar"></div>
+                <div class="gauge-marker inverted-marker" style="top: 0%">80psi</div>
+                <div class="gauge-marker inverted-marker" style="top: 20%">50psi</div>
+                <div class="gauge-marker inverted-marker" style="top: 70%">35psi</div>
+                <div class="gauge-marker inverted-marker" style="top: 100%">0psi</div>
+            </div>
+            <div class="gauge-value" id="presOleo">45psi</div>
+        </div>
+        <div class="gauge-container">
+            <div><h4 class="titulos_gauge">Fuel Pres.</h4></div>
+            <div class="twothreshold">
+                <div class="gauge-bar" id="fuelpresBar"></div>
+                <div class="gauge-marker" style="top: 0%">80psi</div>
+                <div class="gauge-marker" style="top: 20%">50psi</div>
+                <div class="gauge-marker" style="top: 70%">35psi</div>
+                <div class="gauge-marker" style="top: 100%">0psi</div>
+            </div>
+            <div class="gauge-value" id="presFuel">45psi</div>
+        </div>
+        <div class="gauge-container">
+            <div><h4 class="titulos_gauge">Lambda</h4></div>
+            <div class="twothreshold">
+                <div class="gauge-bar" id="lambdaBar"></div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 0%">1</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 20%">0.90</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 70%">0.86</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 100%">0</div>
+            </div>
+            <div class="gauge-value" id="lambdaValue">0.88</div>
+        </div>
+        <div class="gauge-container">
+            <div><h4 class="titulos_gauge">Bateria</h4></div>
+            <div class="onethreshold">
+                <div class="gauge-bar" id="batteryBar"></div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 0%">0%</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 10%">10%</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 25%">25%</div>
+                <div class="gauge-marker inverted-marker" style="--marker-position: 100%">100%</div>
+            </div>
+            <div class="gauge-value" id="batteryValue">80%</div>
+        </div>
     </div>
-    <div class="tire-temp">
-      <div class="tire" id="tireFL">FL<br><small>temp</small></div>
-      <div class="tire" id="tireFR">FR<br><small>temp</small></div>
-      <div class="tire" id="tireRL">RL<br><small>temp</small></div>
-      <div class="tire" id="tireRR">RR<br><small>temp</small></div>
+    
+    <div class="grid-section">
+        <h4 class="titulos_gauge">Pneus e Freios</h4>
+        <div class="grid-container" id="grid-container">
+            <!-- Row 1 -->
+            <div class="box-pair">
+                <div class="temperature-tire" id="box1-1">20°C</div>
+                <div class="temperature-brakeL" id="box1-2">20°C</div>
+            </div>
+            <div class="box-pair">
+                <div class="temperature-brakeR" id="box2-1">20°C</div>
+                <div class="temperature-tire" id="box2-2">20°C</div>
+            </div>
+            <!-- Row 2 -->
+            <div class="box-pair">
+                <div class="temperature-tire" id="box3-1">20°C</div>
+                <div class="temperature-brakeL" id="box3-2">20°C</div>
+            </div>
+            <div class="box-pair">
+                <div class="temperature-brakeR" id="box4-1">20°C</div>
+                <div class="temperature-tire" id="box4-2">20°C</div>
+            </div>
+        </div>
     </div>
-  </div>
-  <div class="main-section">
-    <div class="checkboxes">
-      <h4>Sensores disponíveis</h4>
-      <div id="sensorList"></div>
+    
+    <!-- Checkbox and Graph Section -->
+    <div class="checkbox">
+        <fieldset>
+            <legend>Datasets</legend>
+            <div class="checks_container" id="sensorList">
+                <!-- Checkboxes will be added here dynamically -->
+            </div>
+        </fieldset>    
     </div>
-    <div class="charts">
-      <canvas id="chart1"></canvas>
-      <canvas id="chart2"></canvas>
-      <canvas id="chart3"></canvas>
+    <div class="graph-grid">
+        <div class="chart-container">
+            <div class="chart-title">No data selected</div>
+            <canvas id="chart1"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">No data selected</div>
+            <canvas id="chart2"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">No data selected</div>
+            <canvas id="chart3"></canvas>
+        </div>
     </div>
-  </div>
 
-  <script>
-  const ws = new WebSocket("ws://localhost:8080");
+    <script>
+        // Store current temperatures with proper identification
+        const boxTypes = {
+            'box1-1': 'tire',   // Front Left Tire
+            'box1-2': 'brake',  // Front Left Brake
+            'box2-1': 'brake',  // Front Right Brake
+            'box2-2': 'tire',   // Front Right Tire
+            'box3-1': 'tire',   // Rear Left Tire
+            'box3-2': 'brake',  // Rear Left Brake
+            'box4-1': 'brake',  // Rear Right Brake
+            'box4-2': 'tire'    // Rear Right Tire
+        };
 
-  const maxPoints = 30;
-  const sensorData = {};
-  const charts = [null, null, null];
-  const chartDatasets = [[], [], []];
-  const chartLabels = [[], [], []];
+        const currentTemps = {
+            'box1-1': 20, 'box1-2': 20,
+            'box2-1': 20, 'box2-2': 20,
+            'box3-1': 20, 'box3-2': 20,
+            'box4-1': 20, 'box4-2': 20
+        };
 
-  // Criação dinâmica das checkboxes com base no primeiro JSON recebido
-  let initialized = false;
+        // Chart variables
+        const maxPoints = 30;
+        const charts = [null, null, null];
+        
+        // WebSocket connection
+        const ws = new WebSocket("ws://localhost:8080");
+        let initialized = false;
 
-  const createBarRPM = (ctx, color) => new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [''],
-      datasets: [{ data: [0], backgroundColor: color }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 10000 },
-        x: { display: false }
-      }
-    }
-  });
-
-  const createBarTemp = (ctx, color) => new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [''],
-      datasets: [{ data: [0], backgroundColor: color }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 160 },
-        x: { display: false }
-      }
-    }
-  });
-
-  const createBarOil = (ctx, color) => new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [''],
-      datasets: [{ data: [0], backgroundColor: color }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 100 },
-        x: { display: false }
-      }
-    }
-  });
-
-  const createBarFuel = (ctx, color) => new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [''],
-      datasets: [{ data: [0], backgroundColor: color }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 20 },
-        x: { display: false }
-      }
-    }
-  });
-
-  const createBarLambda = (ctx, color) => new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [''],
-      datasets: [{ data: [0], backgroundColor: color }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 2 },
-        x: { display: false }
-      }
-    }
-  });
-
-  const createBarBatt = (ctx, color) => new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: [''],
-      datasets: [{ data: [0], backgroundColor: color }]
-    },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 16 },
-        x: { display: false }
-      }
-    }
-  });
-
-  const bars = {
-    rpm: createBarRPM(document.getElementById("rpmBar"), "blue"),
-    temp: createBarTemp(document.getElementById("tempBar"), "red"),
-    oilPress: createBarOil(document.getElementById("oilBar"), "orange"),
-    fuelPress: createBarFuel(document.getElementById("fuelBar"), "purple"),
-    lambda: createBarLambda(document.getElementById("lambdaBar"), "green"),
-    batt: createBarBatt(document.getElementById("batteryBar"), "yellow")
-  };
-
-  function updateTire(id, value) {
-    const el = document.getElementById(id);
-    el.innerHTML = `${id}<br><small>${value.toFixed(1)}°C</small>`;
-    el.style.backgroundColor = value > 80 ? "#ff6666" : value > 60 ? "#ffcc00" : "#324a5f";
-  }
-
-  function createLineChart(ctx, label) {
-    return new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label,
-          data: [],
-          borderColor: 'white',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          fill: true,
-          pointRadius: 3,
-          pointBackgroundColor: 'white',
-          tension: 0.2
-        }]
-      },
-      options: {
-        responsive: true,
-        animation: false,
-        scales: {
-          x: { display: true },
-          y: { beginAtZero: false }
+        // Initialize charts
+       
+        function createLineChart(ctx, label, color) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 3,
+                        tension: 0, // Straight lines
+                        stepped: label.toLowerCase().includes('gear') ? 'before' : false, // Stepped only for gear (this is just for it to look more clean and assetto corsa like)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0 // Disable animations for better performance
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // Hide legend since we have titles
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            display: true,
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: { 
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: { 
+                            beginAtZero: false,
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: { 
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    },
+                    elements: {
+                        line: {
+                            cubicInterpolationMode: 'default'
+                        }
+                    }
+                }
+            });
         }
-      }
-    });
-  }
+
+        // Color palette for charts
+        const chartColors = ['#197BBD', '#70AE6E', '#FF6666'];
+
+        // Setup checkboxes based on JSON data
+        function setupCheckboxes(data) {
+            const keys = Object.keys(data).filter(k => k !== "timestamp");
+            const container = document.getElementById("sensorList");
+            container.innerHTML = '';
+
+            keys.forEach((key, i) => {
+                const div = document.createElement('div');
+                div.style.margin = '5px 0';
+                
+                const cb = document.createElement('input');
+                cb.type = "checkbox";
+                cb.id = key;
+                cb.name = key;
+                cb.value = key;
+                cb.addEventListener("change", handleCheckbox);
+                
+                const label = document.createElement('label');
+                label.htmlFor = key;
+                label.textContent = key;
+                label.style.color = 'white';
+                
+                div.appendChild(cb);
+                div.appendChild(label);
+                container.appendChild(div);
+            });
+        }
+
+        
+        // Store chart data when changing selections (this is for future recovery of the data, for when the user wants to reopen a graph that they closed before)
+        const chartDataCache = {};
+        // Handle checkbox changes
+        function handleCheckbox() {
+            const selected = Array.from(document.querySelectorAll("#sensorList input:checked"))
+                .map(cb => cb.value)
+                .slice(0, 3);
+
+            // Save current chart data before destroying
+            charts.forEach((chart, i) => {
+                if (chart) {
+                    chartDataCache[chart.data.datasets[0].label] = {
+                        labels: [...chart.data.labels],
+                        data: [...chart.data.datasets[0].data]
+                    };
+                    chart.destroy();
+                }
+            });
+
+            // Create new charts with cached data if available
+            for (let i = 0; i < 3; i++) {
+                const chartElement = document.getElementById(`chart${i+1}`);
+                const titleElement = chartElement.parentElement.querySelector('.chart-title');
+                
+                if (i < selected.length) {
+                    const color = chartColors[i % chartColors.length];
+                    const sensorName = selected[i];
+                    
+                    // Create new chart
+                    charts[i] = createLineChart(chartElement, sensorName, color);
+                    
+                    // Restore cached data if available
+                    if (chartDataCache[sensorName]) {
+                        charts[i].data.labels = chartDataCache[sensorName].labels;
+                        charts[i].data.datasets[0].data = chartDataCache[sensorName].data;
+                        charts[i].update();
+                    }
+                    
+                    titleElement.textContent = sensorName;
+                } else {
+                    // Create empty chart
+                    charts[i] = createLineChart(chartElement, 'No data selected', '#666');
+                    titleElement.textContent = 'No data selected';
+                }
+            }
+        }
 
 
-  function updateChart(index, label, time, value) {
-    const chart = charts[index];
-    if (!chart) return;
+        // Update charts with new data
+        function updateChart(index, label, time, value) {
+            const chart = charts[index];
+            if (!chart) return;
 
-    chart.data.labels.push(time);
-    chart.data.datasets[0].data.push(value);
+            chart.data.labels.push(time);
+            chart.data.datasets[0].data.push(value);
 
-    if (chart.data.labels.length > maxPoints) {
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
-    }
+            if (chart.data.labels.length > maxPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
 
-    chart.update();
-  }
+            chart.update();
+        }
 
-  function setupCheckboxes(data) {
-    const keys = Object.keys(data).filter(k => k !== "timestamp");
-    const container = document.getElementById("sensorList");
+        // Update tire and brake temperatures
+        function updateTemperature(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            el.textContent = `${value.toFixed(1)}°C`;
+            
+            // Different color thresholds for tires vs brakes
+            if (id.includes('tire') || id.includes('box1-1') || id.includes('box2-2') || 
+                id.includes('box3-1') || id.includes('box4-2')) {
+                // Tire coloring
+                el.style.backgroundColor = value > 80 ? "#ff6666" : value > 60 ? "#70AE6E" : "#197BBD";
+            } else {
+                // Brake coloring
+                el.style.backgroundColor = value > 600 ? "#ff6666" : value > 200 ? "#70AE6E" : "#197BBD";
+            }
+        }
 
-    keys.forEach((key, i) => {
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.id = key;
-      cb.name = key;
-      cb.value = key;
-      cb.addEventListener("change", handleCheckbox);
+        // WebSocket message handler
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const time = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
 
-      const label = document.createElement("label");
-      label.htmlFor = key;
-      label.innerText = key;
+            // Initialize checkboxes on first message
+            if (!initialized) {
+                setupCheckboxes(data);
+                // Initialize all 3 charts
+                handleCheckbox();
+                initialized = true;
+            }
 
-      const div = document.createElement("div");
-      div.appendChild(cb);
-      div.appendChild(label);
+            // Update tire temperature displays
+            if (data.frontLeftTire) updateTemperature("box1-1", data.frontLeftTire);
+            if (data.frontRightTire) updateTemperature("box2-2", data.frontRightTire);
+            if (data.rearLeftTire) updateTemperature("box3-1", data.rearLeftTire);
+            if (data.rearRightTire) updateTemperature("box4-2", data.rearRightTire);
+            
+            // Update brake temperatures
+            if (data.frontLeftBrake) updateTemperature("box1-2", data.frontLeftBrake);
+            if (data.frontRightBrake) updateTemperature("box2-1", data.frontRightBrake);
+            if (data.rearLeftBrake) updateTemperature("box3-2", data.rearLeftBrake);
+            if (data.rearRightBrake) updateTemperature("box4-1", data.rearRightBrake);
 
-      container.appendChild(div);
-    });
-  }
+            // Update gauge values
+            if (data.rpm) {
+                document.getElementById("rpmValue").textContent = Math.round(data.rpm);
+                document.getElementById("rpmBar").style.height = `${(data.rpm / 13000 * 100)}%`;
+            }
+            if (data.engineTemp) {
+                document.getElementById("tempAgua").textContent = `${data.engineTemp.toFixed(1)}°C`;
+                document.getElementById("tempBar").style.height = `${((data.engineTemp - 60) / 50 * 100)}%`;
+            }
+            if (data.oilPress) {
+                document.getElementById("presOleo").textContent = `${data.oilPress.toFixed(0)}psi`;
+                document.getElementById("oilpresBar").style.height = `${(data.oilPress / 80 * 100)}%`;
+            }
+            if (data.fuelPress) {
+                document.getElementById("presFuel").textContent = `${data.fuelPress.toFixed(0)}psi`;
+                document.getElementById("fuelpresBar").style.height = `${(data.fuelPress / 70 * 100)}%`;
+            }
+            if (data.lambda) {
+                document.getElementById("lambdaValue").textContent = data.lambda.toFixed(2);
+                document.getElementById("lambdaBar").style.height = `${((data.lambda - 0.82) / 0.18 * 100)}%`;
+            }
+            if (data.battery) {
+                document.getElementById("batteryValue").textContent = `${data.battery.toFixed(0)}%`;
+                document.getElementById("batteryBar").style.height = `${data.battery}%`;
+            }
 
-  function handleCheckbox() {
-    const selected = Array.from(document.querySelectorAll(".checkboxes input:checked"))
-      .map(cb => cb.value)
-      .slice(0, 3); // limita a 3
+            // Update charts with selected data
+            const selected = Array.from(document.querySelectorAll("#sensorList input:checked"))
+                .map(cb => cb.value)
+                .slice(0, 3);
 
-    selected.forEach((key, i) => {
-      if (!charts[i]) {
-        charts[i] = createLineChart(document.getElementById(`chart${i+1}`), key);
-      } else {
-        charts[i].data.labels = [];
-        charts[i].data.datasets[0].data = [];
-        charts[i].data.datasets[0].label = key;
-      }
-    });
+            selected.forEach((key, i) => {
+                if (data[key] !== undefined) {
+                    updateChart(i, key, time, data[key]);
+                    // Update the chart title with current value
+                    const titleElement = document.getElementById(`chart${i+1}`).parentElement.querySelector('.chart-title');
+                    titleElement.textContent = `${key}: ${data[key].toFixed(2)}`;
+                }
+            });
+        };
 
-    for (let i = selected.length; i < 3; i++) {
-      if (charts[i]) {
-        charts[i].destroy();
-        charts[i] = null;
-      }
-    }
-  }
+        // Lap timing system
+        let lapCount = 0;
+        let lapStartTime = Date.now();
+        let bestLapTime = 0;
+        const lapEntries = [];
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const time = new Date(data.timestamp).toLocaleTimeString();
+        function formatTime(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            const milliseconds = ms % 1000;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+        }
 
-    // Inicialização das checkboxes apenas na primeira mensagem
-    if (!initialized) {
-      setupCheckboxes(data);
-      initialized = true;
-    }
+        function addLap() {
+            const now = Date.now();
+            const currentLapTime = now - lapStartTime;
+            lapStartTime = now;
+            lapCount++;
+            
+            let delta = "";
+            let deltaClass = "";
+            
+            if (lapCount > 1) {
+                const deltaMs = currentLapTime - bestLapTime;
+                if (deltaMs > 0) {
+                    delta = `+${formatTime(deltaMs)}`;
+                    deltaClass = "delta-positive";
+                } else if (deltaMs < 0) {
+                    delta = `-${formatTime(Math.abs(deltaMs))}`;
+                    deltaClass = "delta-negative";
+                    bestLapTime = currentLapTime;
+                } else {
+                    delta = "0.000";
+                }
+            } else {
+                bestLapTime = currentLapTime;
+                delta = "0.000";
+            }
+            
+            const lapEntry = {
+                number: lapCount,
+                time: currentLapTime,
+                delta: delta,
+                deltaClass: deltaClass
+            };
+            
+            lapEntries.unshift(lapEntry);
+            updateLapDisplay();
+        }
 
-    // Atualiza barras
-    if (bars.rpm) bars.rpm.data.datasets[0].data[0] = data.rpm || 0;
-    if (bars.temp) bars.temp.data.datasets[0].data[0] = data.engineTemp || 0;
-    if (bars.oilPress) bars.oilPress.data.datasets[0].data[0] = data.oilPress || 0;
-    if (bars.fuelPress) bars.fuelPress.data.datasets[0].data[0] = data.fuelPress || 0;
-    if (bars.lambda) bars.lambda.data.datasets[0].data[0] = data.lambda || 0;
-    if (bars.batt) bars.batt.data.datasets[0].data[0] = data.battery || 0;
+        function updateLapDisplay() {
+            const container = document.getElementById('lapEntries');
+            container.innerHTML = '';
+            
+            lapEntries.forEach((lap, index) => {
+                const entry = document.createElement('div');
+                entry.className = `lap-entry ${index === 0 ? 'current-lap' : ''}`;
+                entry.innerHTML = `
+                    <div>${lap.number}</div>
+                    <div>${formatTime(lap.time)}</div>
+                    <div class="${lap.deltaClass}">${lap.delta}</div>
+                `;
+                container.appendChild(entry);
+            });
+        }
 
-    Object.values(bars).forEach(b => b.update());
-
-    // Pneus
-    updateTire("tireFL", data.frontLeftTire || 0);
-    updateTire("tireFR", data.frontRightTire || 0);
-    updateTire("tireRL", data.rearLeftTire || 0);
-    updateTire("tireRR", data.rearRightTire || 0);
-
-    // Gráficos
-    const selected = Array.from(document.querySelectorAll(".checkboxes input:checked"))
-      .map(cb => cb.value)
-      .slice(0, 3);
-
-    selected.forEach((key, i) => {
-      updateChart(i, key, time, data[key]);
-    });
-  };
-  </script>
-
+        // Simulate lap times
+        function simulateLap() {
+            addLap();
+            setTimeout(simulateLap, 60000 + Math.random() * 30000);
+        }
+        setTimeout(simulateLap, 60000 + Math.random() * 30000);
+    </script>
 </body>
 </html>
