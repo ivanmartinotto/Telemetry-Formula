@@ -1,6 +1,6 @@
 # 🏎️ Projeto de Telemetria - Fórmula SAE
 
-Este projeto cria uma Dashboard interativo para visualização de dados em tempo real provenientes dos sensores do carro **UFS-1** desenvolvido pela equipe de Fórmula SAE da Universidade Federal de São Carlos, a **Fórmula Route**.
+Este projeto cria uma Dashboard interativo para visualização de dados em tempo real provenientes dos sensores do carro **UFS01** desenvolvido pela equipe de Fórmula SAE da Universidade Federal de São Carlos, a **Fórmula Route**.
 
 ## 🔧 Componentes
 
@@ -40,6 +40,8 @@ O servidor recebe dados no formato JSON. Por exemplo:
     'rearRightTire': 70.8
 }
 ``` 
+
+O servidor escreve as informações num arquivo no formato .csv (`telemetry_data.csv`) e então esses dados são enviados via WebSocket para o Dashboard.
 
 ## Como rodar (NODE.js e Python já instalados):
 ```bash
