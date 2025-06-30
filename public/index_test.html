@@ -483,14 +483,20 @@
         // Chart variables
         const maxPoints = 30;
         const charts = [null, null, null];
+        const channelData = {}; // Stores all channel historic data
+        const chartColors = ['#197BBD', '#70AE6E', '#FF6666'];
+        let lastUpdateTime = 0;
+        const updateInterval = 100; // Update charts every 100ms
         
         // WebSocket connection
         const ws = new WebSocket("ws://localhost:8080");
         let initialized = false;
 
         // Initialize charts
-       
         function createLineChart(ctx, label, color) {
+            // Clear any previous chart instance
+            Chart.getChart(ctx)?.destroy();
+            
             return new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -504,56 +510,30 @@
                         pointRadius: 0,
                         pointHoverRadius: 3,
                         tension: 0, // Straight lines
-                        stepped: label.toLowerCase().includes('gear') ? 'before' : false, // Stepped only for gear (this is just for it to look more clean and assetto corsa like)
+                        stepped: label.toLowerCase().includes('gear') ? 'before' : false, // Stepped only for gears (Assetto Corsa-esque)
+                        fill: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 0 // Disable animations for better performance
-                    },
-                    plugins: {
-                        legend: {
-                            display: false // Hide legend since we have titles
-                        }
-                    },
+                    animation: { duration: 0 },
+                    plugins: { legend: { display: false } },
                     scales: {
                         x: { 
                             display: true,
-                            grid: { 
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: { 
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 10
-                            }
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                         },
                         y: { 
                             beginAtZero: false,
-                            grid: { 
-                                color: 'rgba(255, 255, 255, 0.1)',
-                                drawBorder: false
-                            },
-                            ticks: { 
-                                color: 'rgba(255, 255, 255, 0.7)'
-                            }
-                        }
-                    },
-                    elements: {
-                        line: {
-                            cubicInterpolationMode: 'default'
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
                         }
                     }
                 }
             });
         }
-
-        // Color palette for charts
-        const chartColors = ['#197BBD', '#70AE6E', '#FF6666'];
 
         // Setup checkboxes based on JSON data
         function setupCheckboxes(data) {
@@ -583,69 +563,85 @@
             });
         }
 
-        
-        // Store chart data when changing selections (this is for future recovery of the data, for when the user wants to reopen a graph that they closed before)
-        const chartDataCache = {};
+        // Update all visible charts
+        function updateVisibleCharts() {
+            charts.forEach((chart, index) => {
+                if (!chart || chart.destroyed) return;
+                
+                const channel = chart.data.datasets[0].label;
+                if (!channelData[channel]) return;
+                
+                // Check if there's need to update
+                const currentLength = chart.data.labels.length;
+                const newLength = channelData[channel].labels.length;
+                
+                if (currentLength !== newLength || 
+                    JSON.stringify(chart.data.labels) !== JSON.stringify(channelData[channel].labels) ){
+                    
+                    chart.data.labels = [...channelData[channel].labels];
+                    chart.data.datasets[0].data = [...channelData[channel].values];
+                    
+                    // Reset chart for clean update
+                    chart.update({
+                        duration: 0,
+                        lazy: true
+                    });
+                    
+                    // Update title with latest value
+                    const latestValue = channelData[channel].values.slice(-1)[0];
+                    document.querySelector(`#chart${index+1}`).parentElement.querySelector('.chart-title').textContent = 
+                        `${channel}: ${latestValue.toFixed(2)}`;
+                }
+            });
+        }
+
         // Handle checkbox changes
         function handleCheckbox() {
             const selected = Array.from(document.querySelectorAll("#sensorList input:checked"))
                 .map(cb => cb.value)
                 .slice(0, 3);
 
-            // Save current chart data before destroying
-            charts.forEach((chart, i) => {
-                if (chart) {
-                    chartDataCache[chart.data.datasets[0].label] = {
-                        labels: [...chart.data.labels],
-                        data: [...chart.data.datasets[0].data]
-                    };
-                    chart.destroy();
-                }
-            });
-
-            // Create new charts with cached data if available
-            for (let i = 0; i < 3; i++) {
-                const chartElement = document.getElementById(`chart${i+1}`);
+            // Update or create charts for selected channels
+            selected.forEach((channel, index) => {
+                const chartElement = document.getElementById(`chart${index+1}`);
                 const titleElement = chartElement.parentElement.querySelector('.chart-title');
                 
-                if (i < selected.length) {
-                    const color = chartColors[i % chartColors.length];
-                    const sensorName = selected[i];
-                    
-                    // Create new chart
-                    charts[i] = createLineChart(chartElement, sensorName, color);
-                    
-                    // Restore cached data if available
-                    if (chartDataCache[sensorName]) {
-                        charts[i].data.labels = chartDataCache[sensorName].labels;
-                        charts[i].data.datasets[0].data = chartDataCache[sensorName].data;
-                        charts[i].update();
-                    }
-                    
-                    titleElement.textContent = sensorName;
-                } else {
-                    // Create empty chart
-                    charts[i] = createLineChart(chartElement, 'No data selected', '#666');
-                    titleElement.textContent = 'No data selected';
+                // Reuse chart if already showing this channel
+                if (charts[index] && charts[index].data.datasets[0].label === channel) {
+                    return;
+                }
+                
+                // Destroy old chart if it exists
+                if (charts[index]) {
+                    charts[index].destroy();
+                }
+                
+                // Create new chart
+                const color = chartColors[index % chartColors.length];
+                charts[index] = createLineChart(chartElement, channel, color);
+                
+                // Initialize with stored data if available
+                if (channelData[channel]) {
+                    charts[index].data.labels = [...channelData[channel].labels];
+                    charts[index].data.datasets[0].data = [...channelData[channel].values];
+                    charts[index].update();
+                }
+                
+                titleElement.textContent = channel;
+            });
+            
+            // Clear any unused charts
+            for (let i = selected.length; i < 3; i++) {
+                if (charts[i]) {
+                    charts[i].destroy();
+                    charts[i] = null;
+                    document.getElementById(`chart${i+1}`).parentElement.querySelector('.chart-title')
+                        .textContent = 'Select a channel';
                 }
             }
-        }
-
-
-        // Update charts with new data
-        function updateChart(index, label, time, value) {
-            const chart = charts[index];
-            if (!chart) return;
-
-            chart.data.labels.push(time);
-            chart.data.datasets[0].data.push(value);
-
-            if (chart.data.labels.length > maxPoints) {
-                chart.data.labels.shift();
-                chart.data.datasets[0].data.shift();
-            }
-
-            chart.update();
+            
+            // Force immediate update
+            updateVisibleCharts();
         }
 
         // Update tire and brake temperatures
@@ -655,7 +651,7 @@
             
             el.textContent = `${value.toFixed(1)}°C`;
             
-            // Different color thresholds for tires vs brakes
+            // Colors for tires and brakes
             if (id.includes('tire') || id.includes('box1-1') || id.includes('box2-2') || 
                 id.includes('box3-1') || id.includes('box4-2')) {
                 // Tire coloring
@@ -669,23 +665,39 @@
         // WebSocket message handler
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            const time = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            const time = new Date(data.timestamp).toLocaleTimeString([], 
+                {hour: '2-digit', minute:'2-digit', second:'2-digit'});
 
-            // Initialize checkboxes on first message
+            // First time setup
             if (!initialized) {
                 setupCheckboxes(data);
-                // Initialize all 3 charts
-                handleCheckbox();
                 initialized = true;
             }
 
-            // Update tire temperature displays
+            // Store all channel data (except timestamp)
+            Object.entries(data).forEach(([key, value]) => {
+                if (key === "timestamp") return;
+                
+                if (!channelData[key]) {
+                    channelData[key] = { labels: [], values: [] };
+                }
+                
+                channelData[key].labels.push(time);
+                channelData[key].values.push(value);
+                
+                // Trim old data
+                if (channelData[key].labels.length > maxPoints) {
+                    channelData[key].labels.shift();
+                    channelData[key].values.shift();
+                }
+            });
+
+            // Update temperature displays
             if (data.frontLeftTire) updateTemperature("box1-1", data.frontLeftTire);
             if (data.frontRightTire) updateTemperature("box2-2", data.frontRightTire);
             if (data.rearLeftTire) updateTemperature("box3-1", data.rearLeftTire);
             if (data.rearRightTire) updateTemperature("box4-2", data.rearRightTire);
             
-            // Update brake temperatures
             if (data.frontLeftBrake) updateTemperature("box1-2", data.frontLeftBrake);
             if (data.frontRightBrake) updateTemperature("box2-1", data.frontRightBrake);
             if (data.rearLeftBrake) updateTemperature("box3-2", data.rearLeftBrake);
@@ -717,19 +729,12 @@
                 document.getElementById("batteryBar").style.height = `${data.battery}%`;
             }
 
-            // Update charts with selected data
-            const selected = Array.from(document.querySelectorAll("#sensorList input:checked"))
-                .map(cb => cb.value)
-                .slice(0, 3);
-
-            selected.forEach((key, i) => {
-                if (data[key] !== undefined) {
-                    updateChart(i, key, time, data[key]);
-                    // Update the chart title with current value
-                    const titleElement = document.getElementById(`chart${i+1}`).parentElement.querySelector('.chart-title');
-                    titleElement.textContent = `${key}: ${data[key].toFixed(2)}`;
-                }
-            });
+            // Throttle chart updates
+            const now = Date.now();
+            if (now - lastUpdateTime > updateInterval) {
+                updateVisibleCharts();
+                lastUpdateTime = now;
+            }
         };
 
         // Lap timing system
