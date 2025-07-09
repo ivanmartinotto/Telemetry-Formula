@@ -19,11 +19,11 @@ const messageBuffer = [];
 const MAX_BUFFER_SIZE = 100000; // tamanho maximo do buffer
 
 // servir arquivos estaticos (html, js, css)
-expressApp.use(express.static(path.join(__dirname, "public","index_test.html")));
+expressApp.use(express.static(path.join(__dirname, "public","index.html")));
 
 // redireciona rota raiz para o dashboard (index)
 expressApp.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index_test.html"))
+  res.sendFile(path.join(__dirname, "public", "index.html"))
 });
 
 // WebSocket recebe dados do ESP e envia para o dashboard
